@@ -33,10 +33,12 @@ else
 fi
 
 actawssenvloggerINFO 'Get ARN...'
+echo ''
 arn=$(aws sts get-caller-identity --profile ${profile} | jq -r .Arn | sed -e 's/:user\//:mfa\//')
 
 
 actawssenvloggerINFO 'Get SessionToken...'
+echo ''
 jsonToken=$(aws sts get-session-token --serial-number $arn --token-code $mfacode --profile $profile)
 if [[ $jsonToken = '' ]]; then
     actawssenvloggerERROR 'can not get SessionToken'
