@@ -33,12 +33,10 @@ else
 fi
 
 actawssenvloggerINFO 'Get ARN...'
-echo ''
 arn=$(aws sts get-caller-identity --profile ${profile} | jq -r .Arn | sed -e 's/:user\//:mfa\//')
 
 
 actawssenvloggerINFO 'Get SessionToken...'
-echo ''
 jsonToken=$(aws sts get-session-token --serial-number $arn --token-code $mfacode --profile $profile)
 if [[ $jsonToken = '' ]]; then
     actawssenvloggerERROR 'can not get SessionToken'
@@ -57,13 +55,13 @@ export AWS_SESSION_TOKEN=${aws_session_token}
 export AWS_SDK_LOAD_CONFIG=true
 
 actawssenvloggerINFO 'SUCESS!'
+# for zsh (prezto)
+actawssenvloggerINFO 'Set PROMPT'
+PROMPT="[$profile] "
+
 echo "-+-+-+-+-+-+-+-+-result-+-+-+-+-+-+-+-+-+-+"
 echo ARN=$arn
 echo PROFILE=$profile
 echo MFACODE=$mfacode
 echo $jsonToken | jq .
 echo "-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
-
-# for zsh (prezto)
-actawssenvloggerINFO 'Set PROMPT'
-PROMPT="[$profile] "
