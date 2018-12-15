@@ -18,14 +18,25 @@ actawssenvusage(){
     echo -e "\e[34musage\e[m: source $0 token-code [profile=default]" 1>&2
 }
 
-profile='default'
 
+
+credentialPath=~/.aws/credentials
+credentialFile=$(mktemp)
+
+export AWS_SHARED_CREDENTIALS_FILE=${credentialPath}
+
+profile='default'
+region='us-east-1'
 
 if [ $# -eq 1 ]; then
     mfacode=$1
 elif [ $# -eq 2 ]; then
     mfacode=$1
     profile=$2
+elif [ $# -eq 2 ]; then
+    mfacode=$1
+    profile=$2
+    region=$3
 else
     echo $(date +"%H:%M:%S")' [ERROR] parameter error'
     actawssenvusage
@@ -33,11 +44,11 @@ else
 fi
 
 actawssenvloggerINFO 'Get ARN...'
-arn=$(aws sts get-caller-identity --profile ${profile} | jq -r .Arn | sed -e 's/:user\//:mfa\//')
+arn=$(aws sts get-caller-identity --profile ${profile} --region $region | jq -r .Arn | sed -e 's/:user\//:mfa\//')
 
 
 actawssenvloggerINFO 'Get SessionToken...'
-jsonToken=$(aws sts get-session-token --serial-number $arn --token-code $mfacode --profile $profile)
+jsonToken=$(aws sts get-session-token --serial-number $arn --token-code $mfacode --profile $profile --region $region)
 if [[ $jsonToken = '' ]]; then
     actawssenvloggerERROR 'can not get SessionToken'
     actawssenvusage
@@ -53,6 +64,15 @@ export AWS_ACCESS_KEY_ID=${aws_access_key_id}
 export AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
 export AWS_SESSION_TOKEN=${aws_session_token}
 export AWS_SDK_LOAD_CONFIG=true
+export AWS_SHARED_CREDENTIALS_FILE=${credentialFile}
+
+echo "[${profile}]" > ${credentialFile}
+echo aws_access_key_id = ${aws_access_key_id} >> ${credentialFile}
+echo aws_secret_access_key = ${aws_secret_access_key} >> ${credentialFile}
+echo aws_session_token = ${aws_session_token} >> ${credentialFile}
+
+
+
 
 actawssenvloggerINFO 'SUCESS!'
 # for zsh (prezto)
@@ -64,4 +84,5 @@ echo ARN=$arn
 echo PROFILE=$profile
 echo MFACODE=$mfacode
 echo $jsonToken | jq .
+echo CREDENTIALS_FILE=${credentialFile} 
 echo "-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
